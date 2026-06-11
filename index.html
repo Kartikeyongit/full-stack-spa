@@ -66,6 +66,7 @@
       font-size: 0.95rem;
       letter-spacing: -0.2px;
       min-height: 100vh;
+      position: relative; /* Added for dropdown positioning context */
     }
 
     /* Custom Scrollbar */
@@ -1071,10 +1072,12 @@
       backdrop-filter: blur(30px);
       padding: 3.5rem;
       border-radius: var(--radius-xl);
+      width: 100%;
       max-width: 780px;
       margin: 3rem auto 5rem;
       border: 1px solid rgba(210, 185, 150, 0.3);
       box-shadow: var(--shadow-md);
+      position: relative; /* Added for stacking context */
     }
     .form-row {
       display: flex;
@@ -1083,6 +1086,8 @@
     }
     .form-group {
       flex: 1;
+      position: relative; /* Added for dropdown positioning */
+      min-width: 0;
     }
     input, textarea, select {
       font-family: var(--font-ui);
@@ -1109,6 +1114,129 @@
       background-repeat: no-repeat;
       background-position: right 1.2rem center;
       padding-right: 2.5rem;
+    }
+    
+    /* ============ CUSTOM SELECT DROPDOWN ============ */
+    .custom-select-wrapper {
+      position: relative;
+      width: 100%;
+      z-index: 50; /* Ensure wrapper is above other elements */
+    }
+
+    .custom-select-trigger {
+      font-family: var(--font-ui);
+      width: 100%;
+      height: 54px;
+      padding: 1rem 3rem 1rem 1.3rem;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--clay);
+      background: rgba(255, 255, 250, 0.65);
+      font-size: 0.9rem;
+      letter-spacing: -0.2px;
+      color: var(--dark-bark);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .custom-select-trigger:hover {
+      border-color: var(--gold);
+      background: rgba(255, 255, 250, 0.85);
+    }
+
+    .custom-select-trigger.active {
+      border-color: var(--gold);
+      background: rgba(255, 255, 250, 0.95);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      border-bottom: none;
+    }
+
+    .selected-text {
+      color: var(--dark-bark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .selected-text.placeholder {
+      color: #9b8b7a;
+    }
+
+    .select-arrow-icon {
+      color: var(--gold);
+      font-size: 0.75rem;
+      transition: transform 0.3s ease;
+      flex-shrink: 0;
+      margin-left: 0.8rem;
+    }
+
+    .custom-select-trigger.active .select-arrow-icon {
+      transform: rotate(180deg);
+    }
+
+    /* Portal Dropdown - FIXED */
+    .dropdown-portal {
+      position: fixed;
+      background: #faf7f2;
+      border: 1.5px solid var(--gold);
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      box-shadow: 0 15px 35px rgba(70, 50, 30, 0.25);
+      z-index: 99999 !important; /* Extremely high z-index to ensure visibility */
+      display: none;
+      overflow: hidden;
+      min-width: 200px;
+      backdrop-filter: blur(10px); /* Added for visual consistency */
+    }
+
+    .dropdown-portal.show {
+      display: block;
+    }
+
+    .portal-option {
+      font-family: var(--font-ui);
+      padding: 0.85rem 1.3rem;
+      cursor: pointer;
+      color: var(--dark-bark);
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      border-bottom: 1px solid rgba(210, 185, 150, 0.12);
+      background: #faf7f2;
+      white-space: nowrap;
+    }
+
+    .portal-option:last-child {
+      border-bottom: none;
+    }
+
+    .portal-option:hover {
+      background: #e8dccb;
+      padding-left: 1.8rem;
+    }
+
+    .portal-option.selected {
+      background: #efe2d1;
+      font-weight: 500;
+    }
+
+    .portal-option.selected::before {
+      content: '✦ ';
+      color: var(--gold);
+      font-size: 0.6rem;
+    }
+
+    .portal-options-inner {
+      max-height: 240px;
+      overflow-y: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .portal-options-inner::-webkit-scrollbar {
+      display: none;
     }
 
     /* ============ FOOTER ============ */
@@ -1598,14 +1726,13 @@
         <div class="form-row">
           <div class="form-group"><input type="text" placeholder="company (optional)"></div>
           <div class="form-group">
-            <select required>
-              <option value="">select service...</option>
-              <option>full‑stack web application</option>
-              <option>api & backend development</option>
-              <option>front‑end spa redesign</option>
-              <option>devops & cloud infrastructure</option>
-              <option>technical consultation</option>
-            </select>
+            <div class="custom-select-wrapper">
+              <div class="custom-select-trigger" onclick="toggleCustomSelect(this)">
+                <span class="selected-text placeholder">select service...</span>
+                <i class="fas fa-chevron-down select-arrow-icon"></i>
+              </div>
+              <input type="hidden" name="service" class="service-input">
+            </div>
           </div>
         </div>
         <div class="form-group" style="margin-bottom: 1.5rem;">
@@ -1658,6 +1785,9 @@
     </div>
   </div>
 
+  <!-- Portal for dropdown -->
+  <div id="dropdown-portal" class="dropdown-portal"></div>
+
   <script>
     (() => {
       // ============ FLOATING PARTICLES ============
@@ -1688,30 +1818,26 @@
         });
       }
 
-      // ============ SMOOTH SCROLL FOR ANCHOR LINKS ============
+      // ============ SMOOTH SCROLL ============
       document.querySelectorAll('a[href^="#"]').forEach(a => {
         a.addEventListener('click', function(e) {
           e.preventDefault();
           const target = document.querySelector(this.getAttribute('href'));
           if (target) {
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            // Close mobile menu after navigation
             document.getElementById('navLinks').classList.remove('active');
             document.getElementById('mobileMenuBtn').setAttribute('aria-expanded', 'false');
           }
         });
       });
 
-      // ============ MOBILE MENU TOGGLE ============
+      // ============ MOBILE MENU ============
       const mobileMenuBtn = document.getElementById('mobileMenuBtn');
       const navLinks = document.getElementById('navLinks');
-      
       mobileMenuBtn.addEventListener('click', () => {
         const isActive = navLinks.classList.toggle('active');
         mobileMenuBtn.setAttribute('aria-expanded', isActive);
       });
-
-      // Close mobile menu when clicking outside
       document.addEventListener('click', (e) => {
         if (!e.target.closest('.navbar') && navLinks.classList.contains('active')) {
           navLinks.classList.remove('active');
@@ -1723,79 +1849,51 @@
       const animateCounter = (el) => {
         const target = parseInt(el.getAttribute('data-target'));
         if (isNaN(target)) return;
-        
         const duration = 2200;
         const step = target / (duration / 16);
         let current = 0;
-        
         const update = () => {
           current += step;
-          if (current < target) {
-            el.textContent = Math.floor(current);
-            requestAnimationFrame(update);
-          } else {
-            el.textContent = target;
-          }
+          if (current < target) { el.textContent = Math.floor(current); requestAnimationFrame(update); }
+          else { el.textContent = target; }
         };
         update();
       };
-
-      // Intersection Observer for counters
-      const observerOptions = { threshold: 0.4 };
       const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            const counters = entry.target.querySelectorAll('.stat-number');
-            counters.forEach(counter => {
-              // Reset counter before animating
-              counter.textContent = '0';
-              animateCounter(counter);
-            });
+            entry.target.querySelectorAll('.stat-number').forEach(c => { c.textContent = '0'; animateCounter(c); });
             observer.unobserve(entry.target);
           }
         });
-      }, observerOptions);
-
+      }, { threshold: 0.4 });
       const statsSection = document.getElementById('statsSection');
       if (statsSection) observer.observe(statsSection);
 
-      // ============ FAQ ACCORDION ============
+      // ============ FAQ ============
       window.toggleFAQ = function(questionElement) {
         const faqItem = questionElement.parentElement;
-        const allFAQItems = document.querySelectorAll('.faq-item');
-        
-        allFAQItems.forEach(item => {
+        document.querySelectorAll('.faq-item').forEach(item => {
           if (item !== faqItem && item.classList.contains('active')) {
             item.classList.remove('active');
             item.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
           }
         });
-        
         const isActive = faqItem.classList.toggle('active');
         questionElement.setAttribute('aria-expanded', isActive);
       };
-
-      // Keyboard support for FAQ
       document.querySelectorAll('.faq-question').forEach(question => {
         question.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            toggleFAQ(question);
-          }
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFAQ(question); }
         });
       });
 
-      // ============ NAVBAR SCROLL EFFECT ============
+      // ============ NAVBAR SCROLL ============
       window.addEventListener('scroll', () => {
-        const navbar = document.getElementById('navbar');
-        if (window.scrollY > 50) {
-          navbar.classList.add('scrolled');
-        } else {
-          navbar.classList.remove('scrolled');
-        }
+        document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
       });
 
-      // ============ FORM HANDLERS ============
+      // ============ NEWSLETTER ============
       window.handleNewsletterSubmit = function(form) {
         const emailInput = form.querySelector('input[type="email"]');
         if (emailInput && emailInput.value) {
@@ -1804,24 +1902,150 @@
         }
       };
 
+      // ============ PORTAL DROPDOWN (FIXED - RELIABLE POSITIONING) ============
+      const portal = document.getElementById('dropdown-portal');
+      let activeTrigger = null;
+      
+      const services = [
+        'Full‑Stack Web Application', 
+        'API & Backend Development', 
+        'Front‑End SPA Redesign', 
+        'DevOps & Cloud Infrastructure', 
+        'Technical Consultation'
+      ];
+      
+      // Build dropdown options
+      portal.innerHTML = '<div class="portal-options-inner"></div>';
+      const inner = portal.querySelector('.portal-options-inner');
+      services.forEach(service => {
+        const option = document.createElement('div');
+        option.className = 'portal-option';
+        option.textContent = service;
+        option.addEventListener('click', () => selectPortalOption(service));
+        // Prevent mousedown from triggering blur events
+        option.addEventListener('mousedown', (e) => e.preventDefault());
+        inner.appendChild(option);
+      });
+      
+      window.toggleCustomSelect = function(trigger) {
+        const wrapper = trigger.closest('.custom-select-wrapper');
+        const hiddenInput = wrapper.querySelector('.service-input');
+        const currentValue = hiddenInput.value;
+        
+        if (activeTrigger === trigger) { 
+          closeDropdown(); 
+          return; 
+        }
+        
+        closeDropdown();
+        
+        // Highlight current selection
+        portal.querySelectorAll('.portal-option').forEach(opt => {
+          opt.classList.remove('selected');
+          if (opt.textContent === currentValue) opt.classList.add('selected');
+        });
+        
+        // Position dropdown relative to trigger
+        const triggerRect = trigger.getBoundingClientRect();
+        
+        // Set position
+        portal.style.top = triggerRect.bottom + 'px';
+        portal.style.left = triggerRect.left + 'px';
+        portal.style.width = triggerRect.width + 'px';
+        
+        // Show dropdown first to get its dimensions
+        portal.classList.add('show');
+        activeTrigger = trigger;
+        trigger.classList.add('active');
+        
+        // Check if dropdown goes below viewport and adjust
+        const portalRect = portal.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        
+        if (portalRect.bottom > viewportHeight - 10) {
+          // Position above the trigger
+          portal.style.top = (triggerRect.top - portalRect.height) + 'px';
+          portal.style.borderRadius = 'var(--radius-sm) var(--radius-sm) 0 0';
+          portal.style.borderTop = '1.5px solid var(--gold)';
+          portal.style.borderBottom = 'none';
+        } else {
+          portal.style.borderRadius = '0 0 var(--radius-sm) var(--radius-sm)';
+          portal.style.borderTop = 'none';
+          portal.style.borderBottom = '1.5px solid var(--gold)';
+        }
+      };
+      
+      function selectPortalOption(value) {
+        if (!activeTrigger) return;
+        const wrapper = activeTrigger.closest('.custom-select-wrapper');
+        const selectedText = wrapper.querySelector('.selected-text');
+        const hiddenInput = wrapper.querySelector('.service-input');
+        
+        selectedText.textContent = value;
+        selectedText.classList.remove('placeholder');
+        hiddenInput.value = value;
+        
+        closeDropdown();
+      }
+      
+      function closeDropdown() {
+        portal.classList.remove('show');
+        if (activeTrigger) { 
+          activeTrigger.classList.remove('active'); 
+          activeTrigger = null; 
+        }
+      }
+      
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-select-wrapper') && !e.target.closest('#dropdown-portal')) {
+          closeDropdown();
+        }
+      });
+      
+      // Update dropdown position on scroll
+      window.addEventListener('scroll', () => {
+        if (activeTrigger) {
+          const triggerRect = activeTrigger.getBoundingClientRect();
+          portal.style.top = triggerRect.bottom + 'px';
+          portal.style.left = triggerRect.left + 'px';
+          
+          // Check if dropdown is still visible
+          const portalRect = portal.getBoundingClientRect();
+          if (portalRect.bottom > window.innerHeight - 10) {
+            portal.style.top = (triggerRect.top - portalRect.height) + 'px';
+          }
+        }
+      }, true);
+      
+      // Close dropdown on resize
+      window.addEventListener('resize', closeDropdown);
+
+      // ============ CONTACT FORM ============
       window.handleContactSubmit = function(form) {
         const nameInput = form.querySelector('input[type="text"]');
         const emailInput = form.querySelector('input[type="email"]');
+        const serviceInput = form.querySelector('.service-input');
+        
         if (nameInput && emailInput && nameInput.value && emailInput.value) {
-          alert('🌸 Message received, ' + nameInput.value + '!\n\nWe will respond to ' + emailInput.value + ' within 24 hours.\nThank you for reaching out to luminesce.');
+          const service = serviceInput && serviceInput.value ? serviceInput.value : 'Not specified';
+          alert('🌸 Message received, ' + nameInput.value + '!\n\nService: ' + service + '\nWe will respond to ' + emailInput.value + ' within 24 hours.');
           form.reset();
+          
+          // Reset the custom select
+          const wrapper = form.querySelector('.custom-select-wrapper');
+          if (wrapper) {
+            wrapper.querySelector('.selected-text').textContent = 'select service...';
+            wrapper.querySelector('.selected-text').classList.add('placeholder');
+            wrapper.querySelector('.service-input').value = '';
+          }
+          closeDropdown();
+        } else {
+          alert('Please fill in your name and email.');
         }
       };
 
-      // ============ CONSOLE WELCOME ============
-      console.log(
-        '%c✨ luminesce spa %c· %cfull stack tranquility activated %c🌿\n%cAll components verified and working',
-        'font-family: "Space Mono", monospace; font-size: 1.2rem; color: #4a3b2f;',
-        '',
-        'font-family: "JetBrains Mono", monospace; color: #5f4e3c;',
-        '',
-        'font-family: "JetBrains Mono", monospace; font-size: 0.8rem; color: #7a9a7a;'
-      );
+      console.log('%c✨ luminesce spa %c· %cdropdown active', 'font-family:"Space Mono",monospace;font-size:1.2rem;color:#4a3b2f;', '', 'font-family:"JetBrains Mono",monospace;color:#5f4e3c;');
     })();
   </script>
 </body>
