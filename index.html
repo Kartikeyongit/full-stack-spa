@@ -1946,13 +1946,25 @@
       const animateCounter = (el) => {
         const target = parseInt(el.getAttribute('data-target'));
         if (isNaN(target)) return;
+        const isMobile =
+          window.innerWidth <= 768 ||
+          'ontouchstart' in window ||
+          navigator.maxTouchPoints > 0;
+        if (isMobile) {
+          el.textContent = target;
+          return;
+        }
         const duration = 2200;
         const step = target / (duration / 16);
         let current = 0;
         const update = () => {
           current += step;
-          if (current < target) { el.textContent = Math.floor(current); requestAnimationFrame(update); }
-          else { el.textContent = target; }
+          if (current < target) {
+            el.textContent = Math.floor(current);
+            requestAnimationFrame(update);
+          } else {
+            el.textContent = target;
+          }
         };
         update();
       };
