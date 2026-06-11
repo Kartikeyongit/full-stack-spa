@@ -1364,6 +1364,98 @@
         padding: 2rem 1.5rem;
       }
     }
+    
+    /* ===== MOBILE PERFORMANCE PATCH ===== */
+    @media (max-width: 768px) {
+    
+      /* Remove expensive glassmorphism */
+      .navbar,
+      .nav-links,
+      .badge,
+      .btn-outline,
+      .process-step,
+      .tech-tag,
+      .portfolio-item,
+      .testimonial-card,
+      .pricing-card,
+      .faq-item,
+      .footer,
+      .footer-bottom {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+    
+      /* Hide animated background effects */
+      .aura,
+      .particles {
+        display: none !important;
+      }
+    
+      /* Reduce shadow rendering cost */
+      .portfolio-item,
+      .testimonial-card,
+      .pricing-card,
+      .process-step,
+      .faq-item,
+      .footer,
+      .navbar {
+        box-shadow: 0 4px 12px rgba(0,0,0,.08) !important;
+      }
+    
+      /* Disable hover transforms on touch devices */
+      .portfolio-item:hover,
+      .pricing-card:hover,
+      .pricing-card.featured:hover,
+      .process-step:hover,
+      .tech-tag:hover,
+      .btn-outline:hover,
+      .social-icons a:hover,
+      .footer-col a:hover {
+        transform: none !important;
+        box-shadow: inherit !important;
+      }
+    
+      .portfolio-item:hover .portfolio-img,
+      .process-step:hover i,
+      .logo:hover i {
+        transform: none !important;
+      }
+    
+      /* Prevent featured pricing card scaling */
+      .pricing-card.featured {
+        transform: none !important;
+      }
+    
+      /* Faster rendering */
+      .portfolio-item,
+      .testimonial-card,
+      .pricing-card,
+      .process-step,
+      .tech-tag {
+        will-change: auto;
+      }
+    
+      /* Better mobile viewport handling */
+      body,
+      .app-container {
+        min-height: 100dvh;
+      }
+    
+      /* Reduce transition workload */
+      * {
+        transition-duration: 0.15s !important;
+      }
+      
+      .portfolio-item,
+      .pricing-card,
+      .process-step,
+      .tech-tag,
+      .testimonial-card,
+      .navbar {
+        transform: translateZ(0);
+        backface-visibility: hidden;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1792,7 +1884,9 @@
     (() => {
       // ============ FLOATING PARTICLES ============
       const pc = document.getElementById('particles');
-      for (let i = 0; i < 25; i++) {
+      const particleCount =
+        window.innerWidth <= 768 ? 0 : 12;
+      for (let i = 0; i < particleCount; i++) {
         const p = document.createElement('div');
         p.classList.add('particle');
         p.style.left = Math.random() * 100 + '%';
